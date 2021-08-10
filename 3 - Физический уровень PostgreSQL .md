@@ -1,0 +1,79 @@
+# Цель:
+
+- создавать дополнительный диск для уже существующей виртуальной машины, размечать его и делать на нем файловую систему
+- переносить содержимое базы данных PostgreSQL на дополнительный диск
+- переносить содержимое БД PostgreSQL между виртуальными машинами
+
+# Выполнение:
+
+- создайте виртуальную машину c Ubuntu 20.04 LTS (bionic) в GCE типа e2-medium в default VPC в любом регионе и зоне, например us-central1-a 
+  - Воспользовался виртуальной машиной из задания   [2 - SQL и реляционные СУБД. Введение в PostgreSQL.md](2 - SQL и реляционные СУБД. Введение в PostgreSQL.md) 
+  - ![image-20210810134932847](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810134932847.png)
+- поставьте на нее PostgreSQL через sudo apt
+  - Данный пункт так же был выполнен в прошлом задание
+  - sudo apt update && sudo apt upgrade -y && sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - && sudo apt-get update && sudo apt-get -y install postgresql && sudo apt install unzip
+- проверьте что кластер запущен через sudo -u postgres pg_lsclusters
+  - ![image-20210810135343670](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810135343670.png)
+- зайдите из под пользователя postgres в psql и сделайте произвольную таблицу с произвольным содержимым postgres=# create table test(c1 text); postgres=# insert into test values('1'); \q
+  - sudo -u postgres psql
+  - ![image-20210810141538446](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810141538446.png)
+  - ![image-20210810141643734](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810141643734.png)
+- остановите postgres например через sudo -u postgres pg_ctlcluster 13 main stop
+  - ![image-20210810141744928](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810141744928.png)
+- создайте новый standard persistent диск GKE через Compute Engine -> Disks в том же регионе и зоне что GCE инстанс размером например 10GB
+  - ![image-20210810142533204](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810142533204.png)
+  - ![image-20210810142743368](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810142743368.png)
+  - ![image-20210810142830168](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810142830168.png)
+- добавьте свеже-созданный диск к виртуальной машине - надо зайти в режим ее редактирования и дальше выбрать пункт attach existing disk
+  - ![image-20210810143154548](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810143154548.png)
+  - ![image-20210810143216764](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810143216764.png)
+  - ![image-20210810143300587](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810143300587.png)
+- проинициализируйте диск согласно инструкции и подмонтировать файловую систему, только не забывайте менять имя диска на актуальное, в вашем случае это скорее всего будет /dev/sdb - https://www.digitalocean.com/community/tutorials/how-to-partition-and-format-storage-devices-in-linux
+  - sudo apt-get update
+  - ![image-20210810145230252](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145230252.png)
+  - sudo apt-get install parted
+  - ![image-20210810145253307](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145253307.png)
+  - sudo parted -l | grep Error
+  - ![image-20210810145403227](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145403227.png)
+  - lsblk
+  - ![image-20210810145440756](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145440756.png)
+  - sudo parted /dev/sdb mklabel msdos
+  - ![image-20210810145708971](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145708971.png)
+  - sudo parted -a opt /dev/sdb mkpart primary ext4 0% 100%
+  - ![image-20210810145952284](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810145952284.png)
+  - sudo mkfs.ext4 -L datapartition /dev/sdb1
+  - ![image-20210810150048251](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150048251.png)
+  - sudo mkdir -p /mnt/data
+  - ![image-20210810150155497](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150155497.png)
+  - ![image-20210810150413905](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150413905.png)
+- сделайте пользователя postgres владельцем /mnt/data - chown -R postgres:postgres /mnt/data/
+  - sudo chown -R postgres:postgres /mnt/data/
+  - ![image-20210810150505587](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150505587.png)
+- перенесите содержимое /var/lib/postgres/13 в /mnt/data - mv /var/lib/postgresql/13 /mnt/data
+  - sudo  mv /var/lib/postgresql/13 /mnt/data
+  - ![image-20210810150541585](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150541585.png)
+- попытайтесь запустить кластер - sudo -u postgres pg_ctlcluster 13 main start
+  - ![image-20210810150604171](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810150604171.png)
+- напишите получилось или нет и почему
+  - Не получилось, так как мы перенесли директорию
+- задание: найти конфигурационный параметр в файлах раположенных в /etc/postgresql/10/main который надо поменять и поменяйте его
+  - ![image-20210810152200071](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810152200071.png)
+- напишите что и почему поменяли
+  - Измения внес в  postgresql.conf
+  - ![image-20210810151852547](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810151852547.png)
+  - заменил значение data_directory с /var/lib/postgresql/13 на /mnt/data
+  - ![image-20210810152020986](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810152020986.png)
+- попытайтесь запустить кластер - sudo -u postgres pg_ctlcluster 13 main start
+  - ![image-20210810152617106](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810152617106.png)
+- напишите получилось или нет и почему
+  - С первой попытки не получилось, так как каталог "/mnt/data" не является каталогом кластера базы данных
+  - Обновил data_directory = '/mnt/data/13/main'  
+  - ![image-20210810154944869](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810154944869.png)
+  - После изменения кластер удачно запустился
+  - ![image-20210810155110151](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810155110151.png)
+- зайдите через через psql и проверьте содержимое ранее созданной таблицы
+  - содержимое таблицы сохранилось
+  - ![image-20210810155203807](3%20-%20%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D1%83%D1%80%D0%BE%D0%B2%D0%B5%D0%BD%D1%8C%20PostgreSQL%20.assets/image-20210810155203807.png)
+- задание со звездочкой *: не удаляя существующий GCE инстанс сделайте новый, поставьте на его PostgreSQL, удалите файлы с данными из /var/lib/postgres, перемонтируйте внешний диск который сделали ранее от первой виртуальной машины ко второй и запустите PostgreSQL на второй машине так чтобы он работал с данными на внешнем диске, расскажите как вы это сделали и что в итоге получилось.
+  - пока что не стал делать.
+
