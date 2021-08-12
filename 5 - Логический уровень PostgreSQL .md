@@ -1,0 +1,136 @@
+# Работа с базами данных, пользователями и правами
+
+# Цель:
+
+- создание новой базы данных, схемы и таблицы
+- создание роли для чтения данных из созданной схемы созданной базы данных
+- создание роли для чтения и записи из созданной схемы созданной базы данных
+
+# Выполнение
+
+- создайте новый кластер PostgresSQL 13 (на выбор - GCE, CloudSQL)
+  - воспользовался инстансом с предыдущих заданий
+  - ![image-20210812142305698](Untitled.assets/image-20210812142305698.png)
+  - ![image-20210812142348672](Untitled.assets/image-20210812142348672.png)
+  - остановил докер с прошлого задания
+  - ![image-20210812142513894](Untitled.assets/image-20210812142513894.png)
+  - проверил запущен ли кластер pg_lsclusters
+  - ![image-20210812142608973](Untitled.assets/image-20210812142608973.png)
+- зайдите в созданный кластер под пользователем postgres
+  - sudo -u postgres psql
+  - ![image-20210812142642036](Untitled.assets/image-20210812142642036.png)
+- создайте новую базу данных testdb 
+  -  CREATE DATABASE testdb;
+  - ![image-20210812143146348](Untitled.assets/image-20210812143146348.png)
+- зайдите в созданную базу данных под пользователем postgres 
+  - \c testdb
+  - ![image-20210812143238714](Untitled.assets/image-20210812143238714.png)
+- создайте новую схему testnm
+  - CREATE SCHEMA testnm;
+  - ![image-20210812143422819](Untitled.assets/image-20210812143422819.png)
+- создайте новую таблицу t1 с одной колонкой c1 типа integer
+  - CREATE TABLE t1 (с1 int);
+  - ![image-20210812143619675](Untitled.assets/image-20210812143619675.png)
+- вставьте строку со значением c1=1 
+  - INSERT INTO t1(с1) VALUES (1);
+  - ![image-20210812143818364](Untitled.assets/image-20210812143818364.png)
+- создайте новую роль readonly 
+  - CREATE ROLE readonly;
+  - ![image-20210812144132643](Untitled.assets/image-20210812144132643.png)
+  - ![image-20210812144317036](Untitled.assets/image-20210812144317036.png)
+- дайте новой роли право на подключение к базе данных testdb 
+  - \h CREATE ROLE
+  - ![image-20210812144633128](Untitled.assets/image-20210812144633128.png)
+  - ALTER ROLE readonly WITH login;
+  - ![image-20210812144756134](Untitled.assets/image-20210812144756134.png)
+- дайте новой роли право на использование схемы testnm 
+  - grant connect on database testdb TO readonly;
+  - ![image-20210812145152459](Untitled.assets/image-20210812145152459.png)
+- дайте новой роли право на select для всех таблиц схемы testnm 
+  - grant select on all tables in schema testnm TO readonly;
+  - ![image-20210812145224107](Untitled.assets/image-20210812145224107.png)
+- создайте пользователя testread с паролем test123 
+  - create user testread with password 'test123';
+  - ![image-20210812145306193](Untitled.assets/image-20210812145306193.png)
+- дайте роль readonly пользователю testread 
+  - grant readonly TO testread;
+  - ![image-20210812145326333](Untitled.assets/image-20210812145326333.png)
+- зайдите под пользователем testread в базу данных testdb
+  - \c testdb testread
+  - ![image-20210812145533076](Untitled.assets/image-20210812145533076.png)
+  -  sudo nano /etc/postgresql/13/main/pg_hba.conf
+  - заменил peer на md5
+  - ![image-20210812145920579](Untitled.assets/image-20210812145920579.png)
+  - однако не смог зайти так как у пользователя postgres не было пароля
+  - ![image-20210812150618875](Untitled.assets/image-20210812150618875.png)
+  - но даже после изменений под кастомным юзером войти не получилось
+  - ![image-20210812150948798](Untitled.assets/image-20210812150948798.png)
+  - просмотрел список ролей
+  - ![image-20210812151017421](Untitled.assets/image-20210812151017421.png)
+  - удалось подключиться командой  psql -U testread -h 127.0.0.1 testdb
+  - ![image-20210812152424971](Untitled.assets/image-20210812152424971.png) 
+- сделайте select * from t1; 
+  - ![image-20210812152501635](Untitled.assets/image-20210812152501635.png)
+- получилось? (могло если вы делали сами не по шпаргалке и не упустили один существенный момент про который позже) 
+  - нет
+- напишите что именно произошло в тексте домашнего задания 
+  - не хватило прав
+- у вас есть идеи почему? ведь права то дали? 
+  - по умолчанию таблица находится в public, а мы дали права на testnm
+- посмотрите на список таблиц 
+  - \dt
+  - ![image-20210812152748669](Untitled.assets/image-20210812152748669.png)
+- подсказка в шпаргалке под пунктом 
+  - +
+- а почему так получилось с таблицей (если делали сами и без шпаргалки то может у вас все нормально) 
+  - явно не указали схему
+- вернитесь в базу данных testdb под пользователем postgres 
+  - ![image-20210812154635091](Untitled.assets/image-20210812154635091.png)
+- удалите таблицу t1
+  - drop table t1;
+  - ![image-20210812154725311](Untitled.assets/image-20210812154725311.png)
+- создайте ее заново но уже с явным указанием имени схемы testnm
+  - create table testnm.t1(c1 integer); 
+  - ![image-20210812154825340](Untitled.assets/image-20210812154825340.png)
+  - ![image-20210812154859820](Untitled.assets/image-20210812154859820.png)
+- вставьте строку со значением c1=1 
+  - insert into testnm.t1 values(1);
+  - ![image-20210812154923133](Untitled.assets/image-20210812154923133.png)
+- зайдите под пользователем testread в базу данных testdb 
+  - ![image-20210812154940950](Untitled.assets/image-20210812154940950.png)
+- сделайте select * from testnm.t1; 
+  - ![image-20210812155010644](Untitled.assets/image-20210812155010644.png)
+- получилось? есть идеи почему? если нет - смотрите шпаргалку 
+  - нет, так как таблица новая и к ней доступ не давали
+- как сделать так чтобы такое больше не повторялось? если нет идей - смотрите шпаргалку 
+  - дать доступ ко всем таблицам, а не к какой то конкретной
+  - \c testdb postgres; alter default privileges in schema testnm grant select on tables to readonly; \c testdb testread;
+- сделайте select * from testnm.t1; 
+  - ![image-20210812155443224](Untitled.assets/image-20210812155443224.png)
+- получилось? 
+  - нет
+- есть идеи почему? если нет - смотрите шпаргалку
+  - надо сделать снова или grant select или пересоздать таблицу
+  - ![image-20210812155747990](Untitled.assets/image-20210812155747990.png)
+- сделайте select * from testnm.t1; 
+  - ![image-20210812155758911](Untitled.assets/image-20210812155758911.png)
+- получилось? 
+  - да
+- ура! 
+- теперь попробуйте выполнить команду create table t2(c1 integer); insert into t2 values (2); 
+  - ![image-20210812155844805](Untitled.assets/image-20210812155844805.png)
+- а как так? нам же никто прав на создание таблиц и insert в них под ролью readonly? 
+  - пока что не знаю
+- есть идеи как убрать эти права? если нет - смотрите шпаргалку
+  - просмотрел шпаргалку 
+  - \c testdb postgres; revoke create on schema public from public; revoke all on database testdb from public; \c testdb testread; 
+  - ![image-20210812160309528](Untitled.assets/image-20210812160309528.png)
+- если вы справились сами то расскажите что сделали и почему, если смотрели шпаргалку - объясните что сделали и почему выполнив указанные в ней команды
+  -  REVOKE CREATE ON SCHEMA public FROM PUBLIC -- отменяет привилегию CREATE для PUBLIC схемы у всех пользователей (кроме владельца и суперпользователя)
+  - https://www.postgresql.org/docs/9.4/ddl-schemas.html#DDL-SCHEMAS-PRIV
+- теперь попробуйте выполнить команду create table t3(c1 integer); insert into t2 values (2); 
+  - ![image-20210812160724160](Untitled.assets/image-20210812160724160.png)
+- расскажите что получилось и почему
+  - добавить новую таблицу не получилось, так как отменили привилегию CREATE для PUBLIC схемы
+  - однако добавить запись у нас получилось, так как grant на все действия с PUBLIC дается роли PUBLIC, а  роль PUBLIC добавляется всем новым пользователям. Устранили мы только создание, следовательно у нас остались права на добавление.
+
