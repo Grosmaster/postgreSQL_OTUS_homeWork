@@ -68,6 +68,15 @@
   - 801 ms
 - Описать проблемы, с которыми столкнулись
   - основаная проблема возникла при загрузки файла, попытлся закинуть его через гугл диск, но оказалось все не так тривиально, поэтому просто сгенерировал табличку для теста
+  - upd 
+  - поставил git
+  - ![image-20210822135327699](28%20-%20PostgreSQL%20%D0%B8%20Google%20Kubernetes%20Engine.assets/image-20210822135327699.png)
+  - скачал заготовленный csv с такси
+  - ![image-20210822140637434](28%20-%20PostgreSQL%20%D0%B8%20Google%20Kubernetes%20Engine.assets/image-20210822140637434.png)
+  - date && for f in *.csv*; do psql -U postgres -c "\\COPY taxi_trips FROM PROGRAM 'cat $f' CSV HEADER"; done && dat
+  - ![image-20210822140736537](28%20-%20PostgreSQL%20%D0%B8%20Google%20Kubernetes%20Engine.assets/image-20210822140736537.png)
+  - ![image-20210822140904154](28%20-%20PostgreSQL%20%D0%B8%20Google%20Kubernetes%20Engine.assets/image-20210822140904154.png)
+  - ![image-20210822140948772](28%20-%20PostgreSQL%20%D0%B8%20Google%20Kubernetes%20Engine.assets/image-20210822140948772.png)
 
 ---
 
