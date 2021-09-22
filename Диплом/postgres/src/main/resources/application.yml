@@ -1,0 +1,15 @@
+server:
+  port : 8090
+
+spring:
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+  datasource:
+    platform: postgres
+    url: jdbc:postgresql://34.133.20.117:26257/postgres
+    username: root
+    password: root
+    driverClassName: org.postgresql.Driver
